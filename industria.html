@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RA - Indústria</title>
+    
+    <!-- Scripts A-Frame e MindAR -->
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Modal Inicial de Permissão da Câmera -->
+    <div id="start-modal">
+        <h2>REALIDADE AUMENTADA</h2>
+        <p style="margin-top: 10px; color: #ccc;">Maquete da Indústria</p>
+        <button onclick="iniciarExperiencia()">[ Iniciar ]</button>
+    </div>
+
+    <!-- Interface do Usuário (Overlay) -->
+    <div id="ui-overlay">
+        <div class="top-bar">
+            <a href="index.html" class="btn-back">← Voltar</a>
+        </div>
+        <div class="bot-controls">
+            <button class="btn-ar active" id="btn-planta" onclick="exibirPlanta()">📐 Planta</button>
+            <button class="btn-ar" id="btn-longitudinal" onclick="animarECorte('longitudinal')">✂ Corte AA (Longitudinal)</button>
+            <button class="btn-ar" id="btn-transversal" onclick="animarECorte('transversal')">✂ Corte BB (Transversal)</button>
+        </div>
+    </div>
+
+    <!-- Cena em Realidade Aumentada -->
+    <a-scene 
+        mindar-image="imageTargetSrc: ./target/industria.mind; autoStart: false;" 
+        color-space="sRGB" 
+        renderer="colorManagement: true, physicallyCorrectLights" 
+        vr-mode-ui="enabled: false" 
+        device-orientation-permission-ui="enabled: false">
+        
+        <a-assets>
+            <img id="img-planta" src="./imagens/planta.png" crossorigin="anonymous">
+            <img id="img-corte-aa" src="./imagens/corte_aa.png" crossorigin="anonymous">
+            <img id="img-corte-bb" src="./imagens/corte_bb.png" crossorigin="anonymous">
+        </a-assets>
+
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+        <a-entity id="target-anchor" mindar-image-target="targetIndex: 0">
+            
+            <!-- Desenho Técnico sobre a maquete -->
+            <a-plane id="plane-desenho" 
+                     src="#img-planta" 
+                     position="0 0 0.01" 
+                     rotation="0 0 0" 
+                     width="1.0" 
+                     height="0.75" 
+                     material="transparent: true; opacity: 1; shader: flat;">
+            </a-plane>
+
+            <!-- Plano Vermelho Animado para Indicador de Corte -->
+            <a-plane id="cutting-plane" 
+                     position="-1 0 0.05" 
+                     rotation="0 90 0" 
+                     width="0.75" 
+                     height="0.75" 
+                     material="color: #ff0000; opacity: 0; transparent: true; side: double;">
+            </a-plane>
+
+        </a-entity>
+    </a-scene>
+
+    <script>
+        const sceneEl = document.querySelector('a-scene');
+        const planeDesenho = document.querySelector('#plane-desenho');
+        const cuttingPlane = document.querySelector('#cutting-plane');
+
+        function iniciarExperiencia() {
+            document.getElementById('start-modal').style.display = 'none';
+            sceneEl.systems["mindar-image-system"].start();
+        }
+
+        function setActiveButton(id) {
+            document.querySelectorAll('.btn-ar').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function exibirPlanta() {
+            setActiveButton('btn-planta');
+            planeDesenho.setAttribute('src', '#img-planta');
+        }
+
+        function animarECorte(tipo) {
+            const isLong = tipo === 'longitudinal';
+            setActiveButton(isLong ? 'btn-longitudinal' : 'btn-transversal');
+
+            // Configura direção e eixo de passagem do plano vermelho de corte
+            if (isLong) {
+                cuttingPlane.setAttribute('rotation', '0 90 0');
+                cuttingPlane.setAttribute('position', '-0.6 0 0.05');
+                cuttingPlane.removeAttribute('animation');
+                cuttingPlane.setAttribute('animation', 'property: position; to: 0.6 0 0.05; dur: 700; easing: easeInOutQuad');
+            } else {
+                cuttingPlane.setAttribute('rotation', '90 0 0');
+                cuttingPlane.setAttribute('position', '0 -0.5 0.05');
+                cuttingPlane.removeAttribute('animation');
+                cuttingPlane.setAttribute('animation', 'property: position; to: 0 0.5 0.05; dur: 700; easing: easeInOutQuad');
+            }
+
+            // Ativa o plano transparente vermelho
+            cuttingPlane.setAttribute('material', 'opacity', 0.6);
+
+            // Após o plano passar pela maquete, altera a imagem para o corte correspondente
+            setTimeout(() => {
+                cuttingPlane.setAttribute('material', 'opacity', 0);
+                planeDesenho.setAttribute('src', isLong ? '#img-corte-aa' : '#img-corte-bb');
+            }, 700);
+        }
+    </script>
+</body>
+</html>
